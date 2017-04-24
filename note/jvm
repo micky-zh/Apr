@@ -1,0 +1,45 @@
+JVM调优笔记
+
+java 自动推荐的参数设置
+java -XX:+PrintCommandLineFlags -version
+
+
+tools:
+jprofiler 性能调优，栈调用
+JConsole、VisualVM 和 VisualGC 插件 监控GC
+jstack 监控锁竞争;
+jvmstat
+
+jstat -util pid 2000
+
+
+
+
+#log 分析
+-XX:+PrintGCApplicationStoppedTime
+-XX:+PrintGCApplicationConcurrentTime
+-XX:+PrintGCTimeStamps
+-XX:+PrintGCDetails
+-Xloggc:gc.log
+-XX:+PrintTenuringDistribution
+这个可以打印出 晋升多少次
+
+MinorGC 年轻代 (尽量在这边发生垃圾回收.)
+MajorGC 老年代
+
+Stop-The-World
+CMS初始化标记和remark标记；如果发现初始化标记或者remark标记超过了MinorGC 说明需要JVM需要调优了；
+
+
+垃圾收集开销应该小于10%;也有可能到到1%-%3
+
+
+
+生产使用配置
+JAVA_OPTS=" -Xms32g -Xmx32g -Xmn10g -Xss256k -server -XX:PermSize=128M -XX:MaxPermSize=128M -XX:-UseSplitVerifier  -XX:+UseConcMarkSweepGC  -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled  -XX:+CMSParallelRemarkEnabled -XX:+UseCMSCompactAtFullCollection -XX:CMSFullGCsBeforeCompaction=5 -XX:CMSMaxAbortablePrecleanTime=5  -XX:MaxGCPauseMillis=300  -XX:+DisableExplicitGC  -XX:+HeapDumpOnOutOfMemoryError -XX:+PrintTenuringDistribution -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc.log -Duser.home=/home/work"
+
+
+
+
+
+
