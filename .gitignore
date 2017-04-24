@@ -1,0 +1,23 @@
+#
+#Idea ide project file
+#######################################
+*.iws
+*.iml
+*.ipr
+#Compiled source
+#######################################
+precompiled/
+tmp/
+logs/
+
+production/
+*.class
+
+target/
+.idea/
+upload/
+
+#
+*.pyc
+bash/
+lua/
