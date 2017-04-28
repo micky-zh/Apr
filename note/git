@@ -1,0 +1,3 @@
+
+git rm --cached #停止追踪文件
+git update-index --assume-unchanged [path] # detecting changes
