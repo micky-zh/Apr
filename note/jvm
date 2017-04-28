@@ -3,7 +3,6 @@ JVM调优笔记
 java 自动推荐的参数设置
 java -XX:+PrintCommandLineFlags -version
 
-
 tools:
 jprofiler 性能调优，栈调用
 JConsole、VisualVM 和 VisualGC 插件 监控GC
@@ -13,33 +12,69 @@ jvmstat
 jstat -util pid 2000
 
 
-
-
 #log 分析
 -XX:+PrintGCApplicationStoppedTime
 -XX:+PrintGCApplicationConcurrentTime
--XX:+PrintGCTimeStamps
+-XX:+PrintGCTimeStamps #启动时间
+-XX:+PrintGCDateStamps #带日期
 -XX:+PrintGCDetails
 -Xloggc:gc.log
--XX:+PrintTenuringDistribution
-这个可以打印出 晋升多少次
+-XX:+PrintTenuringDistribution #这个可以打印出 晋升多少次
 
 MinorGC 年轻代 (尽量在这边发生垃圾回收.)
 MajorGC 老年代
 
 Stop-The-World
 CMS初始化标记和remark标记；如果发现初始化标记或者remark标记超过了MinorGC 说明需要JVM需要调优了；
-
-
 垃圾收集开销应该小于10%;也有可能到到1%-%3
 
-
-
 生产使用配置
-JAVA_OPTS=" -Xms32g -Xmx32g -Xmn10g -Xss256k -server -XX:PermSize=128M -XX:MaxPermSize=128M -XX:-UseSplitVerifier  -XX:+UseConcMarkSweepGC  -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled  -XX:+CMSParallelRemarkEnabled -XX:+UseCMSCompactAtFullCollection -XX:CMSFullGCsBeforeCompaction=5 -XX:CMSMaxAbortablePrecleanTime=5  -XX:MaxGCPauseMillis=300  -XX:+DisableExplicitGC  -XX:+HeapDumpOnOutOfMemoryError -XX:+PrintTenuringDistribution -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCTimeStamps -Xloggc:/tmp/gc.log -Duser.home=/home/work"
+JAVA_OPTS=" -Xms32g -Xmx32g -Xmn10g -Xss256k -server -XX:PermSize=128M -XX:MaxPermSize=128M -XX:-UseSplitVerifier  -XX:+UseConcMarkSweepGC  -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled  -XX:+CMSParallelRemarkEnabled -XX:+UseCMSCompactAtFullCollection -XX:CMSFullGCsBeforeCompaction=5 -XX:CMSMaxAbortablePrecleanTime=5  -XX:MaxGCPauseMillis=300
+JAVA_OPTS=" -server -Xms32G -Xmx32G -XX:PermSize=512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=20
+-XX:ConcGCThreads=5 -XX:InitiatingHeapOccupancyPercent=70 -XX:-UseSplitVerifier -XX:+DisableExplicitGC
+-XX:+HeapDumpOnOutOfMemoryError -XX:+PrintTenuringDistribution -verbose:gc -XX:+PrintGCDetails
+-XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCDateStamps -Xloggc:/tmp/gc.log
+-Duser.home=/home/work "
+
+GC-log 分析:
+
+17421.876: [CMS-concurrent-mark: 0.383/0.386 secs] [Times: user=2.93 sys=0.31, real=0.38 secs]
+17421.876: [CMS-concurrent-preclean-start]
+17421.926: [CMS-concurrent-preclean: 0.051/0.051 secs] [Times: user=0.31 sys=0.06, real=0.05 secs]
+17421.926: [CMS-concurrent-abortable-preclean-start]
+CMS: abort preclean due to time 17429.628: [CMS-concurrent-abortable-preclean: 7.701/7.702 secs] [Times: user=43.68 sys=6.33, real=7.70 secs]
+17429.628: Application time: 7.8879360 seconds
+
+分析:
+The CMS collector goes through the following phases, only two of which are stop-the-world:
+CMS initial mark - stop-the-world phase
+CMS marking
+CMS precleaning
+CMS abortable preclean
+CMS Remark - stop-the-world phase
+CMS sweep
+CMS reset
 
 
 
+-XX:+PrintTenuringDistribution:
+Desired survivor size 8388608 bytes, new threshold 1 (max 15)
+   - age 1: 16690480 bytes, 16690480 total
 
+在这里例子中，最大任期阀值被设置为15,（通过max 15表示）。内部计算出来的任期阀值是1，通过threshold 1表示。
+Desired survivor size 8388608 bytes表示一个survivor的空间大小。
+目标survivor的占有率是指目标survivor和两个survivor空间总和的比值。
 
+由于期望的survivor大小（8388608）比实际总共survivor字节数（16690480）小，也就是说，survivor空间溢出了，这次MinorGC会有一些对象移动到old代。
+这个就意味着survivor的空间太小了。另外，设定的最大任期阀值是15，但是实际上JVM使用的是1，也表明了survivor的空间太小了。
+如果发现survivor区域太小，就增大survivor的空间。
 
+survivor spave size = -Xmn<value>/(-XX:SurvivorRatio=<ratio>+2)
+这里有一个+2的理由是有两个survivor空间，是一个调节参数。ratio设置的越大，survivor的空间越小。为了说明这个问题，假设young代的大小是-Xmn512m而且-XX:SurvivorRatio=6.
+那么，young代有两个survivor空间且空间大小是64M，那么eden空间的大小是384M。
+
+对于一个给定大小young代空间大小，减小ratio参数增加survivor空间的大小而且减少eden空间的大小。
+反之，增加ratio会导致survivor空间减少而且eden空间增大。减少eden空间会导致MinorGC更加频繁，相反，增加eden空间的大小会导致更小的MinorGC，越多的MinorGC，对象的岁数增长得越快。
+
+survivor空间不够大，不能够存储所有的从eden空间和from suvivor空间复制过来活动对象，溢出的对象会被复制到old代。
+溢出迁移到old代，会导致old代的空间快速增长，会导致stop-the-world压缩垃圾回收，所以，这里要使用MinorGC回收原则。
