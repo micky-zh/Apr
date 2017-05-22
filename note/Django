@@ -1,0 +1,9 @@
+
+#“SELECT field as x…” with Django ORM
+# SELECT my_field AS something_shiny WHERE my_condition = 1
+
+from django.db.models import F
+Foo.objects.filter(cond=1).annotate(sth_shiny=F('my_field'))
+
+# [{"priority": 100, "pkg": "com.nuomi", "v": 100}]
+ParentPriority.objects.filter(status=2).values("pkg", "priority")
