@@ -10,8 +10,6 @@ precompiled/
 tmp/
 logs/
 
-production/
-*.class
 
 target/
 .idea/
@@ -19,5 +17,3 @@ upload/
 
 #
 *.pyc
-bash/
-lua/
