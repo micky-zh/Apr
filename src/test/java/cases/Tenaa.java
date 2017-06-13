@@ -98,7 +98,7 @@ public class Tenaa {
                 continue;
             }
             try {
-                Document rep = initConnection("http://sh01-sjws-cache43.sh01.baidu.com:8123/api/getApp?lc=" + lc).get();
+                Document rep = initConnection("" + lc).get();
                 if (rep.text().contains("bd_code")){
                     list.add(String.format("2017-06-13 12:00:53    %s",rep.text()));
                 }
