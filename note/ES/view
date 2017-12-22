@@ -1,0 +1,17 @@
+# view
+GET /logs_20162801/_alias/*
+GET /_alias/qa
+
+#API
+GET /_cat/health?v
+GET /_cat/indices?v
+
+#maping view index,type
+GET /twitter/_mapping/tweet
+
+#view config
+GET /index_name
+GET /_mapping
+
+
+

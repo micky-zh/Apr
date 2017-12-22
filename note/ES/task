@@ -1,0 +1,4 @@
+#TASK
+GET _tasks?detailed=true&actions=*reindex
+GET /_tasks/taskId:1
+POST _tasks/task_id:1/_cancel

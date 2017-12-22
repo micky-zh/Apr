@@ -1,0 +1,4 @@
+#!/bin/bash
+mysqldump -u root --all-databases | gzip > /home/work/data/dump.sql.gz.tmp
+now=`date +'%Y-%d-%m'`
+mv /home/work/data/dump.sql.gz.tmp /home/work/data/dump.${now}.gz

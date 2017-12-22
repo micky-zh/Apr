@@ -1,0 +1,28 @@
+
+#view,index,type
+GET /twitter/_mapping/tweet
+
+GET /_mapping/tweet(type)
+GET /_all/_mapping/tweet(type)
+
+#All
+GET /_all/_mapping
+GET /_mapping
+
+
+PUT /{index}/_mapping/{type}
+{ body }
+
+example
+PUT twitter/_mapping/user
+{
+  "properties": {
+    "name": {
+      "type": "text"
+    }
+  }
+}
+
+updating existing mappings
+存在的字段不会更新,没有的字段才会生效.
+

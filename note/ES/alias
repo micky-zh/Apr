@@ -1,0 +1,23 @@
+
+All aliases for the index users:
+GET /logs_20162801/_alias/*
+
+All aliases with the name 2016 in any index:
+GET /_alias/2016
+
+All aliases that start with 20 in any index:
+GET /_alias/20*
+
+
+#_alias
+PUT /my_index_v1
+PUT /my_index_v1/_alias/my_index
+
+
+POST /_aliases
+{
+    "actions": [
+        { "remove": { "index": "qa-20170523", "alias": "qa" }},
+        { "add":    { "index": "qa-20171123", "alias": "qa" }}
+    ]
+}

@@ -1,0 +1,215 @@
+#NEW
+#When an index is created, a timestamp is stored in the index metadata for the creation date.
+By default this is automatically generated but it can also be specified using the creation_date parameter on the create index API:
+curl -XPUT localhost:9200/test -d '{
+    "creation_date" : 1407751337000
+}'
+
+This example shows how to index a document without an explicit ID:
+POST /customer/external?pretty
+{
+  "name": "Jane Doe"
+}
+
+POST /customer/external/_bulk?pretty
+{"index":{"_id":"1"}}
+{"name": "John Doe" }
+{"index":{"_id":"2"}}
+{"name": "Jane Doe" }
+
+#WITH ID
+PUT /customer/external/1?pretty
+{
+  "name": "Jane Doe"
+}
+
+#UPDATE
+POST /customer/external/1/_update?pretty
+{
+  "doc": { "name": "Jane Doe" }
+}
+
+
+#ctx._source refers to the current source document that is about to be updated.
+POST /customer/external/1/_update?pretty
+{
+  "script" : "ctx._source.age += 5"
+}
+
+#DELETE
+DELETE /customer/external/2?pretty
+
+POST twitter/_delete_by_query?routing=1
+{
+  "query": {
+    "range" : {
+        "age" : {
+           "gte" : 10
+        }
+    }
+  }
+}
+
+POST twitter/_delete_by_query?scroll_size=5000
+{
+  "query": {
+    "term": {
+      "user": "kimchy"
+    }
+  }
+}
+
+
+#BATCH
+POST /customer/external/_bulk?pretty
+{"update":{"_id":"1"}}
+{"doc": { "name": "John Doe becomes Jane Doe" } }
+{"delete":{"_id":"2"}}
+
+The Bulk API does not fail due to failures in one of the actions. If a single action fails for whatever reason,
+it will continue to process the remainder of the actions after it.
+
+DELETE /_template/template_1
+GET /_template
+GET /gb/_mapping/tweet
+
+
+#Query
+GET twitter/tweet/0?_source=false
+GET twitter/tweet/0?_source_include=*.id&_source_exclude=entities
+GET twitter/tweet/0?_source=*.id,retweeted
+GET twitter/tweet/1/_source
+
+#RESPONSE FILTER 指定rsp 返回字段
+GET /_search?q=elasticsearch&filter_path=took,hits.hits._id,hits.hits._score
+GET /_cluster/state?filter_path=routing_table.indices.**.state
+
+GET test/_mget
+{
+    "docs" : [
+        {
+            "_index" : "test",
+            "_type" : "type",
+            "_id" : "1",
+            "_source" : false
+        },
+        {
+            "_index" : "test",
+            "_type" : "type",
+            "_id" : "2",
+            "_source" : ["field3", "field4"],
+            #"stored_fields" : ["field1", "field2"]
+        },
+        {
+            "_index" : "test",
+            "_type" : "type",
+            "_id" : "3",
+            "_source" : {
+                "include": ["user"],
+                "exclude": ["user.location"]
+            }
+        }
+    ]
+}
+
+#Note that if size is not specified, it defaults to 10.
+#This example does a match_all and returns documents 11 through 20:
+GET /bank/_search
+{
+  "query": { "match_all": {} },
+  "sort": { "balance": { "order": "desc" } },
+  "from": 10,
+  "size": 10
+}
+
+#返回固定字段.
+This example returns all accounts containing the term "mill" or "lane" in the address:
+{
+  "query": { "match": { "address": "mill lane" } }
+  "_source": ["account_number", "balance"]
+}
+
+#短语匹配
+This example is a variant of match (match_phrase) that returns all accounts containing the phrase "mill lane" in the address:
+{
+  "query": { "match_phrase": { "address": "mill lane" } }
+}
+
+#bool
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "age": "40" } }
+      ],
+      "must_not": [
+        { "match": { "state": "ID" } }
+      ]
+    }
+  }
+}
+
+#统计 聚类
+GET /bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "group_by_age": {
+      "range": {
+        "field": "age",
+        "ranges": [
+          {
+            "from": 20,
+            "to": 30
+          },
+          {
+            "from": 30,
+            "to": 40
+          },
+          {
+            "from": 40,
+            "to": 50
+          }
+        ]
+      },
+      "aggs": {
+        "group_by_gender": {
+          "terms": {
+            "field": "gender.keyword"
+          },
+          "aggs": {
+            "average_balance": {
+              "avg": {
+                "field": "balance"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+?human=false
+?format=yaml
+?pretty=true
+?error_trace=true
+
+
+
+
+
+./elasticsearch -Ecluster.name=my_cluster_name -Enode.name=my_node_name
+
+
+Doc count limit.
+Each Elasticsearch shard is a Lucene index. There is a maximum number of documents you can have in a single Lucene index.
+As of LUCENE-5843, the limit is 2,147,483,519
+
+
+#Config auto create index. mapping
+action.auto_create_index=false
+action.auto_create_index=+aaa*,-bbb*,+ccc*,-* (+ meaning allowed, and - meaning disallowed).
+index.mapper.dynamic=false
+
