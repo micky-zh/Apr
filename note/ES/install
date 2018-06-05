@@ -1,0 +1,55 @@
+ERROR: [3] bootstrap checks failed
+[1]: max file descriptors [10240] for elasticsearch process is too low, increase to at least [65536]
+[2]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
+[3]: system call filters failed to install; check the logs and fix your configuration or disable system call filters at your own risk
+
+#1
+#use root
+ulimit -n 65536
+
+#change file
+/etc/security/limits.conf
+* -  nofile  65536
+#see :https://www.elastic.co/guide/en/elasticsearch/reference/current/file-descriptors.html
+
+#2
+sysctl -w vm.max_map_count=655360
+/etc/sysctl.conf
+vm.max_map_count=655360
+sysctl -p
+
+#3 change elasticsearch.yml
+bootstrap.system_call_filter: false
+
+
+#后台启动,记录启动命令
+./bin/elasticsearch -d -p pid
+
+#关闭服务
+kill `cat pid`
+
+#启动命令指定集群名称，节点名称最好是机器名
+./bin/elasticsearch -d -Ecluster.name=my_cluster -Enode.name=node_1
+
+#启动ES的时候需要设定禁止swap.这样效率会更高，频繁的换入换出
+
+
+问题3：
+ERROR: bootstrap checks failed
+memory locking requested for elasticsearch process but memory is not locked
+1
+2
+原因：锁定内存失败
+
+解决方案：
+切换到root用户，编辑limits.conf配置文件， 添加类似如下内容：
+sudo vim /etc/security/limits.conf
+
+添加如下内容:
+* soft memlock unlimited
+* hard memlock unlimited
+备注：* 代表Linux所有用户名称
+
+保存、退出、重新登录才可生效
+临时取消限制
+ulimit -l unlimited

@@ -1,0 +1,109 @@
+
+#创建一个索引
+PUT /customer?pretty
+GET /_cat/indices?v
+
+
+#新增一个doc
+PUT /customer/doc/1?pretty
+{
+  "name": "John Doe"
+}
+
+#新增一个doc,不指定id,系统会默认创建一个ID
+POST /customer/doc?pretty
+{
+  "name": "Jane Doe"
+}
+
+#不存在则创建,否则报错 put-if-absent
+PUT twitter/tweet/1?op_type=create
+{
+    "user" : "kimchy",
+    "post_date" : "2009-11-15T14:12:12",
+    "message" : "trying out Elasticsearch"
+}
+
+
+#更新一个索引
+POST /customer/doc/1/_update?pretty
+{
+  "doc": { "name": "Jane Doe" }
+}
+
+POST /customer/doc/1/_update?pretty
+{
+  "script" : "ctx._source.age += 5"
+}
+
+#脚本更新文档
+POST test/type1/1/_update
+{
+    "script" : {
+        "source": "ctx._source.counter += params.count",
+        "lang": "painless",
+        "params" : {
+            "count" : 4
+        }
+    }
+}
+
+
+#如果文档没有发生变动 会返回 noop
+POST test/type1/1/_update
+{
+    "doc" : {
+        "name" : "new_name"
+    }
+}
+
+#something like this.
+{
+   "_shards": {
+        "total": 0,
+        "successful": 0,
+        "failed": 0
+   },
+   "_index": "test",
+   "_type": "type1",
+   "_id": "1",
+   "_version": 6,
+   "result": noop
+}
+
+#通过请求关闭
+POST test/type1/1/_update
+{
+    "doc" : {
+        "name" : "new_name"
+    },
+    "detect_noop": false
+}
+
+#删除一个索引
+DELETE /customer?pretty
+
+
+POST twitter/_delete_by_query
+{
+  "query": {
+    "match": {
+      "message": "some message"
+    }
+  }
+}
+
+#使用delete by query 的时候,默认会获取一个内部版本号,在去删除该条目
+如果该条目的版本号已经更新,则会反馈到冲突的计算中,如果其中遇到某些错误，直接会终止任务，而且不可以
+POST twitter/tweet/_delete_by_query?conflicts=proceed
+{
+  "query": {
+    "match_all": {}
+  }
+}
+
+#Sending the refresh will refresh all shards involved in the delete by query once the request completes.
+This is different than the Delete API’s refresh
+parameter which causes just the shard that received the delete request to be refreshed.
+设定 refresh 和删除的api不同
+

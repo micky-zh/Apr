@@ -1,0 +1,19 @@
+
+
+By default, internal versioning is used that starts at 1 and increments with each update, deletes included.
+
+PUT twitter/tweet/1?version=2
+{
+    "message" : "elasticsearch now has versioning support, double cool!"
+}
+
+一般来说内部版本号,默认起始数值为1，每次经过修改，删除都会增加增加
+
+version_type=internal&version=2
+只有版本号相同的时候才会操作成功
+
+version_type=external&version=2
+只有版本号大于的时候才会操作成功
+
+version_type=external&version=2
+只有版本号大于等于的时候才会操作成功

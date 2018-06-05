@@ -6,6 +6,9 @@ to blindly dump documents into the target, overwriting any that happen to have t
 create any documents that are missing, and update any documents that have an older version in the destination index than
 they do in the source index
 
+
+#reindex 不会拷贝setting中的文件，需要在设定之前重新设定包括副本等等
+
 POST _reindex
 {
   "source": {

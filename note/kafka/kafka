@@ -1,0 +1,3 @@
+
+#check consumer lag
+./bin/kafka-run-class.sh kafka.tools.ConsumerOffsetChecker --group gfaqconversation --topic qfaqconversation --zookeeper localhost:8181

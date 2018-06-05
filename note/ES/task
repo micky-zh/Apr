@@ -1,4 +1,14 @@
-#TASK
-GET _tasks?detailed=true&actions=*reindex
-GET /_tasks/taskId:1
+#TASK, CAT
+GET _tasks?detailed=true&actions=*/delete/byquery
+
+#Cancle
 POST _tasks/task_id:1/_cancel
+
+#VIEW TASK
+GET /_tasks/taskId:1
+
+#每秒钟查看一次 by requests_per_second,
+POST _delete_by_query/task_id:1/_rethrottle?requests_per_second=-1
+
+
+GET _tasks?detailed=true&actions=*reindex

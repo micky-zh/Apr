@@ -1,0 +1,34 @@
+#!/bin/bash
+DIR=`pwd`
+if [ -f pid ]; then
+    echo "aicp-api is already running"
+else
+     nohup java -Xms32g -Xmx32g \
+        -server \
+        -XX:NewSize=12g  \
+        -XX:MetaspaceSize=128m \
+        -XX:MaxTenuringThreshold=20 \
+        -XX:TargetSurvivorRatio=90 \
+        -XX:SurvivorRatio=4 \
+        -XX:+UseConcMarkSweepGC \
+        -XX:+CMSClassUnloadingEnabled \
+        -XX:+UseCMSCompactAtFullCollection \
+        -XX:-UseAdaptiveSizePolicy \
+        -XX:+DisableExplicitGC \
+        -XX:CMSFullGCsBeforeCompaction=10 \
+        -XX:CMSMaxAbortablePrecleanTime=5 \
+        -XX:+DisableExplicitGC \
+        -XX:+HeapDumpOnOutOfMemoryError \
+        -XX:+PrintAdaptiveSizePolicy \
+        -XX:+PrintTenuringDistribution \
+        -verbose:gc \
+        -XX:+PrintGCDetails \
+        -XX:+PrintGCApplicationStoppedTime \
+        -XX:+PrintGCApplicationConcurrentTime \
+        -XX:+PrintGCDateStamps \
+		-agentpath:/home/work/benchmark/jprofiler8/bin/linux-x64/libjprofilerti.so=port=8849 \
+        -Xloggc:${DIR}/logs/gc.log \
+        -jar ${DIR}/aicp-api.jar 2>&1 >/dev/null &
+        echo $! > pid
+        echo "aicp-api started"
+fi

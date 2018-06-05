@@ -1,0 +1,5 @@
+#allow 1
+iptables -A INPUT -p tcp --dport 30023 ! -s sh01-dx-op02.sh01 -j DROP
+
+#allow 2
+iptables -A INPUT -p tcp --dport 30018 -s 10.202.26.33 -j ACCEPT

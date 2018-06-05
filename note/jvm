@@ -78,3 +78,6 @@ survivor spave size = -Xmn<value>/(-XX:SurvivorRatio=<ratio>+2)
 
 survivor空间不够大，不能够存储所有的从eden空间和from suvivor空间复制过来活动对象，溢出的对象会被复制到old代。
 溢出迁移到old代，会导致old代的空间快速增长，会导致stop-the-world压缩垃圾回收，所以，这里要使用MinorGC回收原则。
+
+
+但是在执行命令jmap -heap pid的时候，如下所示：

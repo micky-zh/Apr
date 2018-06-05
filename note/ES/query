@@ -1,0 +1,507 @@
+
+
+GET /twitter/_search?q=user:kimchy
+
+
+GET /_search
+{
+    "from" : 0, "size" : 10,
+    "query" : {
+        "term" : { "user" : "kimchy" }
+    }
+}
+
+GET _mget
+{
+    "docs" : [
+        {
+            "_index" : "test",
+            "_type" : "type",
+            "_id" : "1"
+        },
+        {
+            "_index" : "test",
+            "_type" : "type",
+            "_id" : "2"
+        }
+    ]
+}
+
+#查询字段包含 mill 的关键字
+GET /bank/_search
+{
+  "query": { "match": { "address": "mill" } }
+}
+
+
+#查询字段等于 mill lane
+GET /bank/_search
+{
+  "query": { "match": { "address": "mill lane" } }
+}
+
+#查询字段包含mill 和 lane 关键字
+GET /bank/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "address": "mill" } },
+        { "match": { "address": "lane" } }
+      ]
+    }
+  }
+}
+
+GET /bank/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "age": "40" } }
+      ],
+      "must_not": [
+        { "match": { "state": "ID" } }
+      ]
+    }
+  }
+}
+
+
+#filter 过滤器，Elasticsearch会自动优化，不会打分score
+GET /bank/_search
+{
+  "query": {
+    "bool": {
+      "must": { "match_all": {} },
+      "filter": {
+        "range": {
+          "balance": {
+            "gte": 20000,
+            "lte": 30000
+          }
+        }
+      }
+    }
+  }
+}
+
+
+#聚合查询 分类并查询出每个的个数，默认只是返回top10的数据，默认降序排列(sort by count)
+GET /bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "group_by_state": {
+      "terms": {
+        "field": "state.keyword"
+      }
+    }
+  }
+}
+
+#类似于sql
+SELECT state, COUNT(*) FROM bank GROUP BY state ORDER BY COUNT(*) DESC
+
+#聚合查询 分类并查询出每个的个数，默认只是返回top10的数据，默认降序排列(sort by count)
+#并且算出每个分类的平均数
+
+GET /bank/_search
+{
+  "size": 0,
+  "aggs": {
+    "group_by_state": {
+      "terms": {
+        "field": "state.keyword",
+        "order": {
+          "average_balance": "desc"
+        }
+      },
+      "aggs": {
+        "average_balance": {
+          "avg": {
+            "field": "balance"
+          }
+        }
+      }
+    }
+  }
+}
+
+exists 查询和 missing 查询编辑
+exists 查询和 missing 查询被用于查找那些指定字段中有值 (exists) 或无值 (missing) 的文档。这与SQL中的 IS_NULL (missing) 和 NOT IS_NULL (exists) 在本质上具有共性：
+{
+    "exists":   {
+        "field":    "title"
+    }
+}
+
+term 查询编辑
+term 查询被用于精确值 匹配，这些精确值可能是数字、时间、布尔或者那些 not_analyzed 的字符串：
+{ "term": { "age":    26           }}
+{ "term": { "date":   "2014-09-01" }}
+{ "term": { "public": true         }}
+{ "term": { "tag":    "full_text"  }}
+
+
+组合多查询编辑
+
+must
+文档 必须 匹配这些条件才能被包含进来。
+must_not
+文档 必须不 匹配这些条件才能被包含进来。
+should
+如果满足这些语句中的任意语句，将增加 _score ，否则，无任何影响。它们主要用于修正每个文档的相关性得分。
+filter
+必须 匹配，但它以不评分、过滤模式来进行。这些语句对评分没有贡献，只是根据过滤标准来排除或包含文档。
+由于这是我们看到的第一个包含多个查询的查询，所以有必要讨论一下相关性得分是如何组合的。每一个子查询都独自地计算文档的相关性得分。一旦他们的得分被计算出来， bool 查询就将这些得分进行合并并且返回一个代表整个布尔操作的得分。
+
+下面的查询用于查找 title 字段匹配 how to make millions 并且不被标识为 spam 的文档。那些被标识为 starred 或在2014之后的文档，将比另外那些文档拥有更高的排名。如果 _两者_ 都满足，那么它排名将更高：
+{
+    "bool": {
+        "must":     { "match": { "title": "how to make millions" }},
+        "must_not": { "match": { "tag":   "spam" }},
+        "should": [
+            { "match": { "tag": "starred" }}
+        ],
+        "filter": {
+          "range": { "date": { "gte": "2014-01-01" }}
+        }
+    }
+}
+
+constant_score 查询编辑
+尽管没有 bool 查询使用这么频繁，constant_score 查询也是你工具箱里有用的查询工具。它将一个不变的常量评分应用于所有匹配的文档。它被经常用于你只需要执行一个 filter 而没有其它查询（例如，评分查询）的情况下。
+可以使用它来取代只有 filter 语句的 bool 查询。在性能上是完全相同的，但对于提高查询简洁性和清晰度有很大帮助。
+{
+    "constant_score":   {
+        "filter": {
+            "term": { "category": "ebooks" }
+        }
+    }
+}
+
+如果评分为零对你造成了困扰，你可以使用 constant_score 查询进行替代：
+GET /_search
+{
+    "query" : {
+        "constant_score" : {
+            "filter" : {
+                "term" : {
+                    "user_id" : 1
+                }
+            }
+        }
+    }
+}
+这将让所有文档应用一个恒定分数（默认为 1 ）。它将执行与前述查询相同的查询，并且所有的文档将像之前一样随机返回，这些文档只是有了一个分数而不是零分。
+
+
+验证查询编辑
+查询可以变得非常的复杂，尤其 和不同的分析器与不同的字段映射结合时，理解起来就有点困难了。不过 validate-query API 可以用来验证查询是否合法。
+GET /gb/tweet/_validate/query
+{
+   "query": {
+      "tweet" : {
+         "match" : "really powerful"
+      }
+   }
+}
+
+以上 validate 请求的应答告诉我们这个查询是不合法的：
+{
+  "valid" :         false,
+  "_shards" : {
+    "total" :       1,
+    "successful" :  1,
+    "failed" :      0
+  }
+}
+
+理解错误信息编辑
+为了找出 查询不合法的原因，可以将 explain 参数 加到查询字符串中：
+GET /gb/tweet/_validate/query?explain
+{
+   "query": {
+      "tweet" : {
+         "match" : "really powerful"
+      }
+   }
+}
+
+
+explain 参数可以提供更多关于查询不合法的信息。
+很明显，我们将查询类型(match)与字段名称 (tweet)搞混了：
+
+{
+  "valid" :     false,
+  "_shards" :   { ... },
+  "explanations" : [ {
+    "index" :   "gb",
+    "valid" :   false,
+    "error" :   "org.elasticsearch.index.query.QueryParsingException:
+                 [gb] No query registered for [tweet]"
+  } ]
+}
+
+
+多级排序编辑
+假定我们想要结合使用 date 和 _score 进行查询，并且匹配的结果首先按照日期排序，然后按照相关性排序：
+GET /_search
+{
+    "query" : {
+        "bool" : {
+            "must":   { "match": { "tweet": "manage text search" }},
+            "filter" : { "term" : { "user_id" : 2 }}
+        }
+    },
+    "sort": [
+        { "date":   { "order": "desc" }},
+        { "_score": { "order": "desc" }}
+    ]
+}
+
+# where price=20 or price=30;
+{
+    "terms" : {
+        "price" : [20, 30]
+    }
+}
+
+
+#range
+
+"range" : {
+    "timestamp" : {
+        "gt" : "now-1h"
+    }
+}
+
+
+SELECT tags FROM   posts WHERE  tags IS NOT NULL
+在 Elasticsearch 中，使用 exists 查询的方式如下：
+
+GET /my_index/posts/_search
+{
+    "query" : {
+        "constant_score" : {
+            "filter" : {
+                "exists" : { "field" : "tags" }
+            }
+        }
+    }
+}
+
+SELECT tags FROM   posts WHERE  tags IS NULL
+我们将前面例子中 exists 查询换成 missing 查询：
+
+GET /my_index/posts/_search
+{
+    "query": {
+        "constant_score" : {
+            "filter" : {
+                 "bool" : {
+                    "must" : [
+                        { "term" : { "tags" : "search" } },
+                        { "term" : { "tag_count" : 1 } }
+                    ]
+                }
+            }
+        }
+    }
+}
+
+
+提高精度编辑
+用 任意 查询词项匹配文档可能会导致结果中出现不相关的长尾。 这是种散弹式搜索。可能我们只想搜索包含 所有 词项的文档，也就是说，不去匹配 brown OR dog ，而通过匹配 brown AND dog 找到所有文档。
+match 查询还可以接受 operator 操作符作为输入参数，默认情况下该操作符是 or 。我们可以将它修改成 and 让所有指定词项都必须匹配：
+
+GET /my_index/my_type/_search
+{
+    "query": {
+        "match": {
+            "title": {
+                "query":    "BROWN DOG!",
+                "operator": "and"
+            }
+        }
+    }
+}
+
+当给定百分比的时候， minimum_should_match 会做合适的事情：在之前三词项的示例中， 75% 会自动被截断成 66.6% ，即三个里面两个词。无论这个值设置成什么，至少包含一个词项的文档才会被认为是匹配的。
+GET /my_index/my_type/_search
+{
+  "query": {
+    "match": {
+      "title": {
+        "query":                "quick brown dog",
+        "minimum_should_match": "75%"
+      }
+    }
+  }
+}
+等价于
+{
+  "bool": {
+    "should": [
+      { "term": { "title": "brown" }},
+      { "term": { "title": "fox"   }},
+      { "term": { "title": "quick" }}
+    ],
+    "minimum_should_match": 2
+  }
+}
+
+#权重
+should 语句匹配得越多表示文档的相关度越高。目前为止还挺好。
+
+但是如果我们想让包含 Lucene 的有更高的权重，并且包含 Elasticsearch 的语句比 Lucene 的权重更高，该如何处理?
+
+我们可以通过指定 boost 来控制任何查询语句的相对的权重， boost 的默认值为 1 ，大于 1 会提升一个语句的相对权重。所以下面重写之前的查询：
+
+GET /_search
+{
+    "query": {
+        "bool": {
+            "must": {
+                "match": {
+                    "content": {
+                        "query":    "full text search",
+                        "operator": "and"
+                    }
+                }
+            },
+            "should": [
+                { "match": {
+                    "content": {
+                        "query": "Elasticsearch",
+                        "boost": 3
+                    }
+                }},
+                { "match": {
+                    "content": {
+                        "query": "Lucene",
+                        "boost": 2
+                    }
+                }}
+            ]
+        }
+    }
+}
+
+boost 参数被用来提升一个语句的相对权重（ boost 值大于 1 ）或降低相对权重（ boost 值处于 0 到 1 之间），但是这种提升或降低并不是线性的，换句话说，如果一个 boost 值为 2 ，并不能获得两倍的评分 _score 。
+相反，新的评分 _score 会在应用权重提升之后被 归一化 ，每种类型的查询都有自己的归一算法，细节超出了本书的范围，所以不作介绍。简单的说，更高的 boost 值为我们带来更高的评分 _score 。
+如果不基于 TF/IDF 要实现自己的评分模型，我们就需要对权重提升的过程能有更多控制，可以使用 function_score 查询操纵一个文档的权重提升方式而跳过归一化这一步骤。
+
+#忽略其他字段
+Instead of the bool query, we can use the dis_max or Disjunction Max Query. Disjunction means or (while conjunction means and) so the Disjunction Max Query simply means return documents that match any of these queries, and return the score of the best matching query:
+{
+    "query": {
+        "dis_max": {
+            "queries": [
+                { "match": { "title": "Brown fox" }},
+                { "match": { "body":  "Brown fox" }}
+            ]
+        }
+    }
+}
+
+
+提升单个字段的权重
+可以使用 ^ 字符语法为单个字段提升权重，在字段名称的末尾添加 ^boost ， 其中 boost 是一个浮点数：
+
+{
+    "multi_match": {
+        "query":  "Quick brown fox",
+        "fields": [ "*_title", "chapter_title^2" ]
+    }
+}
+
+
+chapter_title 这个字段的 boost 值为 2 ，而其他两个字段 book_title 和 section_title 字段的默认 boost 值为 1 。
+
+
+短语匹配
+就像 match 查询对于标准全文检索是一种最常用的查询一样，当你想找到彼此邻近搜索词的查询方法时，就会想到 match_phrase 查询 。
+
+GET /my_index/my_type/_search
+{
+    "query": {
+        "match_phrase": {
+            "title": "quick brown fox"
+        }
+    }
+}
+
+等同于
+match_phrase 查询同样可写成一种类型为 phrase 的 match 查询:
+"match": {
+    "title": {
+        "query": "quick brown fox",
+        "type":  "phrase"
+    }
+}
+
+什么是短语
+一个被认定为和短语 quick brown fox 匹配的文档，必须满足以下这些要求：
+quick 、 brown 和 fox 需要全部出现在域中。
+brown 的位置应该比 quick 的位置大 1 。
+fox 的位置应该比 quick 的位置大 2 。
+
+如果以上任何一个选项不成立，则该文档不能认定为匹配。
+
+
+通配符与正则表达式查询编辑
+与 prefix 前缀查询的特性类似， wildcard 通配符查询也是一种底层基于词的查询， 与前缀查询不同的是它允许指定匹配的正则式。它使用标准的 shell 通配符查询： ? 匹配任意字符， * 匹配 0 或多个字符。
+这个查询会匹配包含 W1F 7HW 和 W2F 8HW 的文档：
+
+GET /my_index/address/_search
+{
+    "query": {
+        "wildcard": {
+            "postcode": "W?F*HW"
+        }
+    }
+}
+
+设想如果现在只想匹配 W 区域的所有邮编，前缀匹配也会包括以 WC 开头的所有邮编，与通配符匹配碰到的问题类似，如果想匹配只以 W 开始并跟随一个数字的所有邮编， regexp 正则式查询允许写出这样更复杂的模式：
+
+GET /my_index/address/_search
+{
+    "query": {
+        "regexp": {
+            "postcode": "W[0-9].+"
+        }
+    }
+}
+
+
+prefix 、 wildcard 和 regexp 查询是基于词操作的，如果用它们来查询 analyzed 字段，它们会检查字段里面的每个词，而不是将字段作为整体来处理。
+比方说包含 “Quick brown fox” （快速的棕色狐狸）的 title 字段会生成词： quick 、 brown 和 fox 。
+会匹配以下这个查询：
+
+{ "regexp": { "title": "br.*" }}
+但是不会匹配以下两个查询：
+
+{ "regexp": { "title": "Qu.*" }}
+{ "regexp": { "title": "quick br*" }}
+
+
+在索引里的词是 quick 而不是 Quick 。
+quick 和 brown 在词表中是分开的。
+
+
+
+查询时输入即搜索编辑
+例如，如果用户输入 johnnie walker bl ，我们希望在它们完成输入搜索条件前就能得到：Johnnie Walker Black Label 和 Johnnie Walker Blue Label 。
+生活总是这样，就像猫的花色远不只一种！我们希望能找到一种最简单的实现方式。并不需要对数据做任何准备，在查询时就能对任意的全文字段实现 输入即搜索（search-as-you-type） 的查询。
+在 短语匹配 中，我们引入了 match_phrase 短语匹配查询，它匹配相对顺序一致的所有指定词语，对于查询时的输入即搜索，可以使用 match_phrase 的一种特殊形式， match_phrase_prefix 查询：
+
+{
+    "match_phrase_prefix" : {
+        "brand" : {
+            "query":          "johnnie walker bl",
+            "max_expansions": 50
+        }
+    }
+}

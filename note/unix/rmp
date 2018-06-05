@@ -1,0 +1,6 @@
+#install
+rpm -ivh webmin.rpm
+
+#uninstall
+rpm -qa | grep -i webmin
+rpm -e <package name>
