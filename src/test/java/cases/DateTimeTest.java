@@ -27,8 +27,8 @@ public class DateTimeTest {
         LocalDate startDate = LocalDate.parse("2017-11-01 00:00:00", DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss"));
         LocalDate endDate = LocalDate.parse("2017-11-02 11:00:00", DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss"));
         //
-//        int hours = Hours.hoursBetween(startDate, endDate).getHours();
-//        System.out.println(hours);
+        //        int hours = Hours.hoursBetween(startDate, endDate).getHours();
+        //        System.out.println(hours);
 
         List<LocalDate> daysRange =
                 Stream.iterate(startDate, date -> date.plusDays(1))
@@ -39,7 +39,6 @@ public class DateTimeTest {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         Collections.sort(daysRange, (s1, s2) -> s1.compareTo(s2));
 
-
         for (LocalDate date : daysRange) {
             System.out.println(date);
         }
@@ -49,7 +48,7 @@ public class DateTimeTest {
     public void testRangeTime() throws ParseException {
         org.joda.time.format.DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
         DateTime startDate = DateTime.parse("2017-11-01 00:00:00", dtf);
-        DateTime endDate = DateTime.parse("2017-11-02 23:59:59".replace(":59",":00"), dtf);
+        DateTime endDate = DateTime.parse("2017-11-02 23:59:59".replace(":59", ":00"), dtf);
         //
         int hours = Hours.hoursBetween(startDate, endDate).getHours();
         System.out.println(hours);
@@ -66,7 +65,6 @@ public class DateTimeTest {
 
     @Test
     public void testRangeMonth() throws ParseException {
-
         LocalDate startDate = LocalDate.parse("2017-10-27 00:00:00", DateTimeFormat.forPattern("yyyy-MM-dd"));
         LocalDate endDate = LocalDate.parse("2017-11-24 11:00:00", DateTimeFormat.forPattern("yyyy-MM-dd"));
         org.joda.time.format.DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM");
@@ -78,6 +76,23 @@ public class DateTimeTest {
         for (LocalDate date : daysRange) {
             System.out.println(dtf.print(date));
         }
+    }
+
+    @Test
+    public void testRangeMonthByNow() throws ParseException {
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusMonths(3);
+        org.joda.time.format.DateTimeFormatter dtf = DateTimeFormat.forPattern("yyyy-MM");
+        List<LocalDate> daysRange =
+                Stream.iterate(startDate, date -> date.plusMonths(1))
+                        .limit(Months.monthsBetween(startDate, endDate).getMonths())
+                        .collect(Collectors.toList());
+        daysRange.add(endDate);
+        List<String> newList = daysRange.stream().map(dtf::print).collect(Collectors.toList());
+        for (String str : newList) {
+            System.out.println(str);
+        }
+        System.out.println(daysRange.stream().map(dtf::print).collect(Collectors.joining(",")));
     }
 
 }
