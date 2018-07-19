@@ -135,7 +135,7 @@ public class JianDan extends BaseDownLoad {
     public static void main(String[] args) throws Exception {
         JianDan j = new JianDan();
         j.init();
-        j.pages = 1000;
+        j.pages = 100;
         j.start();
     }
 }
