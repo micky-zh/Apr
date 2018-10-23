@@ -1,0 +1,2 @@
+ssh -g -L 8001:localhost:8000 -f -N user@remote-server.com
+#This forwards the local port 8001 on your workstation to the localhost address on remote-server.com port 8000.

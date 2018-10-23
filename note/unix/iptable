@@ -6,3 +6,18 @@ iptables -A INPUT -p tcp --dport 30018 -s 10.202.26.33 -j ACCEPT
 
 iptables -nvL
 iptables -F 清除所有规则
+
+
+#转发
+iptables -A INPUT -i eth0 -p tcp --dport 80 -j ACCEPT
+iptables -A INPUT -i eth0 -p tcp --dport 8080 -j ACCEPT
+iptables -A PREROUTING -t nat -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
+
+#转发第二种
+socat TCP-LISTEN:80,fork TCP:127.0.0.1:8080
+
+iptables -A INPUT -i xgbe0 -d 10.233.28.127 -j ACCEPT
+iptables -A INPUT -p vrrp -i xgbe0 -j ACCEPT
+
+
+iptables -A INPUT -i xgbe0 -p vrrp -s 10.233.28.41  -j ACCEPT
