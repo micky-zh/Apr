@@ -1,0 +1,2 @@
+kubectl get svc -n ngd-qa
+kubectl edit svc -n ngd-qa       ngd-es5-elasticsearch-client
