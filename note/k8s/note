@@ -1,2 +1,18 @@
+
+#查看命名空间
+kubectl get namespaces
+
+#查看服务编号
+kubectl get pods --namespace=xxx
+
+#查看服务配置
 kubectl get svc -n ngd-qa
+
+#配置服务映射
 kubectl edit svc -n ngd-qa       ngd-es5-elasticsearch-client
+
+#登录pod
+kubectl exec -t -i backend-online-web-5b7b8c945-c6ssg -n ngdv53  bash
+
+
+kubectl logs -f backend-online-web-5487995979-8br7m  -n ngdv53
