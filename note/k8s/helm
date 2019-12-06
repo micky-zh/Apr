@@ -1,0 +1,3 @@
+
+
+ helm install . --dry-run --debug ./mychart

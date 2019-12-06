@@ -285,4 +285,5 @@ time tcpdump -nn -i eth0 'tcp[tcpflags] = tcp-syn' -c 10000 > /dev/null
 上面的命令计算抓10000个SYN包花费多少时间，可以判断访问量大概是多少。
 
 四、参考资料
-tcpdump advanced filters
+https://www.wains.be/pub/networking/tcpdump_advanced_filters.txt
+https://blog.wains.be/2007/2007-10-01-tcpdump-advanced-filters/

@@ -1,0 +1,9 @@
+
+kubectl describe pod mydb-mysql-dfc999888-hbw5d
+
+# View logs of a crashed pod
+# Use the --previous parameter:
+kubectl logs <POD_NAME> --previous
+
+
+kubectl get pod --show-labels

@@ -1,4 +1,3 @@
-
 #查看命名空间
 kubectl get namespaces
 
@@ -12,7 +11,42 @@ kubectl get svc -n ngd-qa
 kubectl edit svc -n ngd-qa       ngd-es5-elasticsearch-client
 
 #登录pod
-kubectl exec -t -i backend-online-web-5b7b8c945-c6ssg -n ngdv53  bash
+kubectl exec -t -i backend-offline-web-64956f5d94-w6qtv -n ngdv53  bash
+
+#查看每个pod所在的机器
+kubectl get pods -o wide
+
+kubectl logs -f backend-offline-web-64956f5d94-w6qtv  -n ngdv53
+
+kubectl get deployments
+
+kubectl get rs
 
 
-kubectl logs -f backend-online-web-5487995979-8br7m  -n ngdv53
+查看状态：
+$ kubectl rollout status deployment/nginx-deploy
+Waiting for rollout to finish: 1 out of 3 new replicas have been updated..
+deployment "nginx-deploy" successfully rolled out
+
+暂停升级
+$ kubectl rollout pause deployment <deployment>
+
+继续升级
+$ kubectl rollout resume deployment <deployment>
+
+# config-map
+kubectl create configmap cm-demo1 --from-file=testcm
+
+kubectl create configmap cm-demo2 --from-file=testcm/redis.conf
+
+kubectl get configmap
+
+kubectl describe configmap cm-demo1
+
+kubectl get configmap cm-demo1 -o yaml
+
+kubectl create configmap cm-demo3 --from-literal=db.host=localhost --from-literal=db.port=3306
+
+# pv
+kubectl get pv
+kubectl get pvc
